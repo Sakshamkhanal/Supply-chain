@@ -4,7 +4,7 @@ from threading import activeCount
 from rest_framework import serializers
 from Myapp.models import *
 
-class DealerSerializer(serialzers.Modelserializers):
+class DealerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dealer
         field ="__all__"
@@ -19,7 +19,7 @@ class DealerSerializer(serialzers.Modelserializers):
         instance.description = validated_data.get('address',instance.description)
         instance.user = validated_data.get('user',instance.user)
 
-class SalesmanSerilizer(serializers.Modelserializers):
+class SalesmanSerilizer(serializers.ModelSerializer):
     class Meta:
         model = Salesman
         field = "__all__"
@@ -35,7 +35,7 @@ class SalesmanSerilizer(serializers.Modelserializers):
             instance.user = validated_data.get('user',instance.user)
 
 
-class ItemSerilizer(serializers.Modelserializers):
+class ItemSerilizer(serializers.ModelSerializer):
     class Meta:
         model = Item
         field = "__all__"
@@ -50,7 +50,7 @@ class ItemSerilizer(serializers.Modelserializers):
             instance.dealer = validated_data.get('dealer',instance.dealer)
             instance.user = validated_data.get('user',instance.user)
 
-class OrderSerializer(serializers.Modelserializers):
+class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
         field = "__all__"

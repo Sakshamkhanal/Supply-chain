@@ -1,9 +1,13 @@
+from rest_framework import routers
 from django.urls import path,include
-from django.contrib import admin
-from Myapp.api.router import router
- 
- 
-urlpatterns =[
-     path('api/',include(router.urls))
- ]
-        
+from Myapp.api.ViewSets import *
+
+router = routers.DefaultRouter()
+router.register(r'dealer',DealerViewSet,basename='dealer')
+router.register(r'salesman',SalesmanViewSet,basename='salesman')
+router.register(r'items',ItemsViewSet,basename='items')
+router.register(r'order',OrderViewset,basename='order')
+
+urlpatterns = [
+    path('api/',include(router.urls)),
+]
