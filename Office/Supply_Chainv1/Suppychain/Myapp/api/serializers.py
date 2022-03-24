@@ -63,3 +63,7 @@ class OrderSerializer(serializers.ModelSerializer):
         #     instance.salesman = validated_data.get('salesman',instance.salesman)
         #     instance.item = validated_data.get('dealer',instance.item)
             
+class ShopSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shop
+        field ="__all__"

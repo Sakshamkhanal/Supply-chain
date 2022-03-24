@@ -1,5 +1,12 @@
+import email
+from email.headerregistry import Address
+from tabnanny import verbose
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models.signals import post_save,pre_save
+from django.dispatch import receiver 
+from decimal import Decimal
+from django.core.validators import MinValueValidator
 # Create your models here.
 
 class User(AbstractUser):
@@ -8,49 +15,87 @@ class User(AbstractUser):
 class Dealer(models.Model):
     name = models.CharField(max_length=100,verbose_name='Name',null=True,blank=True)
     company_name = models.CharField(max_length=100,verbose_name="Company's name",null=True,blank=True)
-    phone = models.CharField(max_length=15,verbose_name='Phone Number',null=True,blank=True)
-    additional_contact_info = models.CharField(max_length=100,null=True)
+    phone = models.CharField(max_length=15,verbose_name='Phone Number',unique=True)
+    additional_contact_info = models.CharField(max_length=100,null=True,blank=True)
     address = models.CharField(max_length=100,verbose_name='Address',null=True,blank=True)
     description = models.TextField(max_length=500,verbose_name='Description',null=True,blank=True)
-    user = models.ForeignKey(User,on_delete=models.CASCADE,null=True,blank=True)
     
     def __str__(self):
         return self.name
     class Meta:
         verbose_name_plural = 'Dealer'
+        
 class Salesman(models.Model):
     name = models.CharField(max_length=100,verbose_name='Name',null=True,blank=True)
-    phone = models.CharField(max_length=12,verbose_name='Phone number',null=True,blank=True)
+    phone = models.CharField(max_length=12,verbose_name='Phone number',unique=True)
     address = models.CharField(max_length=50,verbose_name='Address',null=True,blank=True)
     email = models.CharField(max_length=100,verbose_name='E-mail',null=True,blank=True)
     dealer = models.ForeignKey(Dealer,on_delete=models.CASCADE,related_name='dealer')
-    user = models.OneToOneField(User,on_delete=models.CASCADE,related_name='user')
-
+    def __str__(self):
+        return self.name
+    
     class Meta:
         verbose_name_plural = 'Salesman'
 
 class Item(models.Model):
-        name = models.CharField(max_length=100,verbose_name='Name',null=True,blank=True)
-        price = models.DecimalField(max_digits=10,decimal_places=3,verbose_name='Price',null=True,blank=True)
-        description = models.TextField(max_length=500,verbose_name='Description',null=True,blank=True)
-        attribute = [('In stock','In stock'),('Out of stock','Out of stock')]
-        status = models.CharField(max_length=12,choices=attribute,default='In stock',verbose_name='Status',null=True,blank=True)
-        dealer = models.ForeignKey(Dealer,on_delete=models.CASCADE,related_name='Dealer1')
-        class Meta:
-            verbose_name_plural = 'Item'
+    name = models.CharField(max_length=100,verbose_name='Name',null=True,blank=True)
+    price = models.DecimalField(max_digits=10,decimal_places=0,validators=[MinValueValidator(Decimal('0.01'))],verbose_name='Price',null=True,blank=True)
+    description = models.TextField(max_length=500,verbose_name='Description',null=True,blank=True)
+    attribute = [('In stock','In stock'),('Out of stock','Out of stock')]
+    status = models.CharField(max_length=12,choices=attribute,default='In stock',verbose_name='Status',null=True,blank=True)
+    dealer = models.ForeignKey(Dealer,on_delete=models.CASCADE,related_name='Dealer1')
+   
+    class Meta:
+        verbose_name_plural = 'Item'
         
-        def __str__(self):
-            return self.name
+    def __str__(self):
+        return self.name
 
 class Order(models.Model):
     name = models.CharField(max_length=100,null=True,verbose_name='Name')
-    # unit = [('box','box'),('kilo','kilo'),('Pound','Pound')]
-    quantity = models.DecimalField(max_digits=6,decimal_places=2,verbose_name='Quantity')
+    quantity = models.DecimalField(max_digits=6,decimal_places=0,validators=[MinValueValidator(Decimal('0.01'))],verbose_name='Quantity')
     date = models.DateTimeField(auto_now_add=True,verbose_name='Date Ordered')
     salesman = models.ForeignKey(Salesman,on_delete=models.CASCADE,related_name='salesman_orders',verbose_name='Salesman')
-    item = models.ForeignKey(Item,on_delete=models.CASCADE,related_name='item_orders')
+    item = models.ForeignKey(Item,on_delete=models.CASCADE,related_name='item_orders',verbose_name='Item')
+
+    class Meta:
+        verbose_name_plural ='Order'
+    
+    def __str__(self):
+        return self.name
+    
+class Shop(models.Model):
+    name = models.CharField(max_length=100,null=True,blank=True,verbose_name='Shop name')
+    address = models.CharField(max_length=100,null=True,blank=True,verbose_name='Address')
+    Order = models.ForeignKey(Order,on_delete=models.CASCADE,related_name='Shop_order',verbose_name='Order')
+    Salesman = models.ForeignKey(Salesman,on_delete=models.CASCADE,related_name='Shop_salesman',verbose_name='Salesman')
 
     def __str__(self):
         return self.name
-    class Meta:
-        verbose_name_plural ='Order'
+
+
+@receiver(pre_save,sender=Dealer)
+def create_user_for_dealer(sender,instance,**kwargs):
+    try:
+       user = User.objects.get(username=instance.phone)
+    except User.DoesNotExist:
+        User.objects.create_user(username=instance.phone,email="",password=instance.phone)
+
+
+@receiver(pre_save,sender=Salesman)
+def create_user_for_salesman(sender,instance,**kwargs):
+    try:
+       user = User.objects.get(username=instance.phone)
+    except User.DoesNotExist:
+        User.objects.create_user(username=instance.phone,email="",password=instance.phone)
+
+@receiver(post_save,sender=Dealer)
+def Dealer_user_roles(sender,instance,**kwargs):
+    user = User.objects.get(username=instance.phone)
+    user.has_perm('Myapp.add_Salesman')
+    user.has_perm('Myapp.delete_Salesman')
+
+@receiver(post_save,sender=Salesman)
+def Salesman_user_roles(sender,instance,**kwargs):
+    user = User.objects.get(username=instance.phone)
+    user.has_perm('Myapp.view_Dealer')
