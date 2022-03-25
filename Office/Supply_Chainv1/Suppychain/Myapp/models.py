@@ -1,3 +1,4 @@
+from ast import Pass
 import email
 from email.headerregistry import Address
 from tabnanny import verbose
@@ -90,12 +91,10 @@ def create_user_for_salesman(sender,instance,**kwargs):
         User.objects.create_user(username=instance.phone,email="",password=instance.phone)
 
 @receiver(post_save,sender=Dealer)
-def Dealer_user_roles(sender,instance,**kwargs):
+def linking_dealer(sender,instance,**kwargs):
     user = User.objects.get(username=instance.phone)
-    user.has_perm('Myapp.add_Salesman')
-    user.has_perm('Myapp.delete_Salesman')
 
 @receiver(post_save,sender=Salesman)
-def Salesman_user_roles(sender,instance,**kwargs):
+def linking_salesman(sender,instance,**kwargs):
     user = User.objects.get(username=instance.phone)
-    user.has_perm('Myapp.view_Dealer')
+
