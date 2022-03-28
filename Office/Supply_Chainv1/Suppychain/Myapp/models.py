@@ -1,4 +1,5 @@
 from ast import Pass
+from curses.ascii import NUL
 import email
 from email.headerregistry import Address
 from tabnanny import verbose
@@ -19,6 +20,7 @@ class Dealer(models.Model):
     phone = models.CharField(max_length=15,verbose_name='Phone Number',unique=True)
     additional_contact_info = models.CharField(max_length=100,null=True,blank=True)
     address = models.CharField(max_length=100,verbose_name='Address',null=True,blank=True)
+    user = models.OneToOneField(User,null=True,blank=True,on_delete=models.SET_NULL,related_name="dealer_user")
     description = models.TextField(max_length=500,verbose_name='Description',null=True,blank=True)
     
     def __str__(self):
@@ -31,6 +33,7 @@ class Salesman(models.Model):
     phone = models.CharField(max_length=12,verbose_name='Phone number',unique=True)
     address = models.CharField(max_length=50,verbose_name='Address',null=True,blank=True)
     email = models.CharField(max_length=100,verbose_name='E-mail',null=True,blank=True)
+    user = models.OneToOneField(User,null=True,blank=True,on_delete=models.SET_NULL,related_name='Salesman_user')
     dealer = models.ForeignKey(Dealer,on_delete=models.CASCADE,related_name='dealer')
     def __str__(self):
         return self.name
@@ -93,8 +96,14 @@ def create_user_for_salesman(sender,instance,**kwargs):
 @receiver(post_save,sender=Dealer)
 def linking_dealer(sender,instance,**kwargs):
     user = User.objects.get(username=instance.phone)
+    if instance.user is None:
+        instance.user = user
+        instance.save()
 
 @receiver(post_save,sender=Salesman)
 def linking_salesman(sender,instance,**kwargs):
     user = User.objects.get(username=instance.phone)
+    if instance.user is None:
+        instance.user = user
+        instance.save()
 
